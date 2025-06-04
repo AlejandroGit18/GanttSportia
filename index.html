@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gantt - PlanetaSportia</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .project-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #667eea;
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .gantt-container {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .gantt-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+            background: white;
+        }
+
+        .gantt-table th,
+        .gantt-table td {
+            border: 1px solid #e1e8ed;
+            padding: 12px 8px;
+            text-align: center;
+            position: relative;
+        }
+
+        .gantt-table th {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .task-column {
+            text-align: left !important;
+            width: 300px;
+            background: #f8f9fa;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .task-name {
+            font-weight: bold;
+            color: #34495e;
+            margin-bottom: 5px;
+        }
+
+        .task-deliverable {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .gantt-bar {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 25px;
+            border-radius: 12px;
+            margin: 2px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .gantt-bar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5);
+        }
+
+        .gantt-bar.planning {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .gantt-bar.design {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        }
+
+        .gantt-bar.demo {
+            background: linear-gradient(135deg, #fed330, #f7b731);
+        }
+
+        .gantt-bar.functionality {
+            background: linear-gradient(135deg, #a55eea, #8b5cf6);
+        }
+
+        .gantt-bar.deployment {
+            background: linear-gradient(135deg, #26d0ce, #1a9e96);
+        }
+
+        .milestone {
+            background: linear-gradient(135deg, #fd79a8, #e84393) !important;
+            position: relative;
+        }
+
+        .milestone::after {
+            content: '🎯';
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 16px;
+        }
+
+        .week-header {
+            background: linear-gradient(135deg, #636e72, #2d3436);
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #fd79a8, #e84393);
+            color: white;
+            box-shadow: 0 4px 15px rgba(253, 121, 168, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(253, 121, 168, 0.6);
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .edit-form {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            min-width: 400px;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .edit-form h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .edit-form input,
+        .edit-form select {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .edit-form input:focus,
+        .edit-form select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .form-buttons button {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .project-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .task-column {
+                width: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Página web PlanetaSportia - Cronograma 6 Semanas</h1>
+        
+        <div class="project-info">
+            <div class="info-item">
+                <div class="info-label">Duración Total</div>
+                <div class="info-value">6 Semanas</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Fases Principales</div>
+                <div class="info-value">5 Etapas</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Entregables</div>
+                <div class="info-value">10 Items</div>
+            </div>
+            <div class="info-item">
+                <div class="info-label">Milestone</div>
+                <div class="info-value">Demo Semana 3</div>
+            </div>
+        </div>
+
+
+
+        <div class="gantt-container">
+            <table class="gantt-table" id="ganttTable">
+                <thead>
+                    <tr>
+                        <th class="task-column">Fase / Entregable</th>
+                        <th class="week-header">Semana 1</th>
+                        <th class="week-header">Semana 2</th>
+                        <th class="week-header">Semana 3</th>
+                        <th class="week-header">Semana 4</th>
+                        <th class="week-header">Semana 5</th>
+                        <th class="week-header">Semana 6</th>
+                    </tr>
+                </thead>
+                <tbody id="ganttBody">
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🎯 FASE 1: PLANEACIÓN Y MAQUETADO</div>
+                            <div class="task-deliverable">Análisis de requerimientos, wireframes, arquitectura</div>
+                        </td>
+                        <td><div class="gantt-bar planning"></div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">📋 Análisis de Requerimientos</div>
+                            <div class="task-deliverable">Documento de especificaciones técnicas</div>
+                        </td>
+                        <td><div class="gantt-bar planning"></div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🖼️ Wireframes y Mockups</div>
+                            <div class="task-deliverable">Prototipos de baja y alta fidelidad</div>
+                        </td>
+                        <td><div class="gantt-bar planning"></div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🎨 FASE 2: APLICACIÓN DE DISEÑO</div>
+                            <div class="task-deliverable">Desarrollo visual, componentes UI, estilos</div>
+                        </td>
+                        <td></td>
+                        <td><div class="gantt-bar design"></div></td>
+                        <td><div class="gantt-bar design"></div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🎭 Sistema de Diseño</div>
+                            <div class="task-deliverable">Guía de estilos, componentes reutilizables</div>
+                        </td>
+                        <td></td>
+                        <td><div class="gantt-bar design"></div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🖥️ Desarrollo Frontend</div>
+                            <div class="task-deliverable">HTML, CSS, JavaScript, responsive design</div>
+                        </td>
+                        <td></td>
+                        <td><div class="gantt-bar design"></div></td>
+                        <td><div class="gantt-bar design"></div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🎯 MILESTONE: DEMO DE DISEÑO</div>
+                            <div class="task-deliverable">Presentación del prototipo con el diseño</div>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td><div class="gantt-bar milestone demo"></div></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">⚙️ FASE 3: INTEGRACIÓN DE FUNCIONALIDADES</div>
+                            <div class="task-deliverable">Backend, APIs, base de datos, lógica de negocio</div>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><div class="gantt-bar functionality"></div></td>
+                        <td><div class="gantt-bar functionality"></div></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🔧 Desarrollo Backend</div>
+                            <div class="task-deliverable">APIs REST, base de datos, autenticación</div>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><div class="gantt-bar functionality"></div></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🔗 Integración Frontend-Backend</div>
+                            <div class="task-deliverable">Conexión de servicios, testing de integración</div>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><div class="gantt-bar functionality"></div></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">🚀 FASE 4: DESPLIEGUE Y CIERRE</div>
+                            <div class="task-deliverable">Deploy, entrega</div>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><div class="gantt-bar deployment"></div></td>
+                    </tr>
+                    <tr>
+                        <td class="task-column">
+                            <div class="task-name">📦 Deploy y Testing Final</div>
+                            <div class="task-deliverable">Ambiente de producción, pruebas finales</div>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td><div class="gantt-bar deployment"></div></td>
+                    </tr>
+                   
+                </tbody>
+            </table>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #ff6b6b, #ee5a24);"></div>
+                <span>Planeación y Maquetado</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #4ecdc4, #44a08d);"></div>
+                <span>Aplicación de Diseño</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #fed330, #f7b731);"></div>
+                <span>Demo/Milestone</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #a55eea, #8b5cf6);"></div>
+                <span>Funcionalidades</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: linear-gradient(135deg, #26d0ce, #1a9e96);"></div>
+                <span>Despliegue y Cierre</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="overlay" id="overlay" onclick="hideEditForm()"></div>
+    <div class="edit-form" id="editForm">
+        <h3>✏️ Editar Proyecto</h3>
+        <input type="text" id="taskName" placeholder="Nombre de la tarea">
+        <input type="text" id="taskDeliverable" placeholder="Entregable">
+        <select id="taskPhase">
+            <option value="planning">Planeación</option>
+            <option value="design">Diseño</option>
+            <option value="demo">Demo/Milestone</option>
+            <option value="functionality">Funcionalidades</option>
+            <option value="deployment">Despliegue</option>
+        </select>
+        <select id="taskWeek">
+            <option value="1">Semana 1</option>
+            <option value="2">Semana 2</option>
+            <option value="3">Semana 3</option>
+            <option value="4">Semana 4</option>
+            <option value="5">Semana 5</option>
+            <option value="6">Semana 6</option>
+        </select>
+        <div class="form-buttons">
+            <button class="btn btn-primary" onclick="saveTask()">💾 Guardar</button>
+            <button class="btn btn-secondary" onclick="hideEditForm()">❌ Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];
+        let editingIndex = -1;
+
+        function showEditForm() {
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('editForm').style.display = 'block';
+        }
+
+        function hideEditForm() {
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('editForm').style.display = 'none';
+            editingIndex = -1;
+            clearForm();
+        }
+
+        function clearForm() {
+            document.getElementById('taskName').value = '';
+            document.getElementById('taskDeliverable').value = '';
+            document.getElementById('taskPhase').value = 'planning';
+            document.getElementById('taskWeek').value = '1';
+        }
+
+        function addTask() {
+            editingIndex = -1;
+            clearForm();
+            showEditForm();
+        }
+
+        function saveTask() {
+            const name = document.getElementById('taskName').value;
+            const deliverable = document.getElementById('taskDeliverable').value;
+            const phase = document.getElementById('taskPhase').value;
+            const week = parseInt(document.getElementById('taskWeek').value);
+
+            if (!name.trim()) {
+                alert('Por favor ingresa el nombre de la tarea');
+                return;
+            }
+
+            const task = {
+                name: name,
+                deliverable: deliverable,
+                phase: phase,
+                week: week
+            };
+
+            if (editingIndex >= 0) {
+                tasks[editingIndex] = task;
+            } else {
+                tasks.push(task);
+            }
+
+            updateGanttTable();
+            hideEditForm();
+        }
+
+        function updateGanttTable() {
+            const tbody = document.getElementById('ganttBody');
+            const rows = tbody.querySelectorAll('tr');
+            
+            // Agregar nuevas tareas al final
+            tasks.forEach((task, index) => {
+                if (index >= rows.length) {
+                    addTaskRow(task);
+                }
+            });
+        }
+
+        function addTaskRow(task) {
+            const tbody = document.getElementById('ganttBody');
+            const row = tbody.insertRow();
+            
+            const taskCell = row.insertCell();
+            taskCell.className = 'task-column';
+            taskCell.innerHTML = `
+                <div class="task-name">${task.name}</div>
+                <div class="task-deliverable">${task.deliverable}</div>
+            `;
+
+            // Agregar celdas para cada semana
+            for (let i = 1; i <= 6; i++) {
+                const cell = row.insertCell();
+                if (i === task.week) {
+                    cell.innerHTML = `<div class="gantt-bar ${task.phase}"></div>`;
+                }
+            }
+        }
+
+        function exportGantt() {
+            const data = {
+                projectInfo: {
+                    duration: '6 Semanas',
+                    phases: 5,
+                    deliverables: 11,
+                    milestone: 'Demo Semana 3'
+                },
+                tasks: tasks
+            };
+
+            const dataStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'proyecto_web_gantt.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // Agregar interactividad a las barras existentes
+        document.addEventListener('DOMContentLoaded', function() {
+            const bars = document.querySelectorAll('.gantt-bar');
+            bars.forEach(bar => {
+                bar.addEventListener('click', function() {
+                    const row = this.closest('tr');
+                    const taskName = row.querySelector('.task-name').textContent;
+                    const deliverable = row.querySelector('.task-deliverable').textContent;
+                    alert(`📋 Tarea: ${taskName}\n🎯 Entregable: ${deliverable}`);
+                });
+            });
+        });
+    </script>
+</body>
+</html>
